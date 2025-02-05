@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mishail's Domino - Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/notiflix@3.2.7/dist/notiflix-aio-3.2.7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .game-title {
+            margin: 0;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5vw;
+        }
+
+        .player-name-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            background: rgba(255, 99, 71, 0.3);
+            border: 2px solid #ff6347;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .tiles-container {
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            min-height: 150px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+		.domino-tile {
+            width: 240px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3),
+                       -4px -4px 8px rgba(255, 255, 255, 0.1);
+        }
+
+        .domino-tile:hover:not(.disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .domino-half {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .domino-half:first-child {
+            border-right: 2px solid rgba(30, 60, 114, 0.3);
+        }
+
+        .selected-tile {
+            border: 2px solid #ff6347;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-status {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 12px;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .your-turn {
+            background-color: rgba(255, 99, 71, 0.3);
+            border: 2px solid #ff6347;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 99, 71, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 99, 71, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 99, 71, 0); }
+        }
+
+        .disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .placement-options {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .placement-options.visible {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); }
+            to { transform: translate(-50%, 0); }
+        }
+
+        .placement-options h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+		button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff6347;
+            color: white;
+            cursor: pointer;
+            box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff6347;
+            background-color: rgba(255, 99, 71, 0.1);
+            border: 1px solid #ff6347;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #playerName {
+            padding: 10px 15px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+            width: 80%;
+            max-width: 300px;
+            margin: 10px 0;
+        }
+
+        #playerName:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 99, 71, 0.5);
+        }
+
+        .game-controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 15px;
+            }
+
+            .tiles-container {
+                padding: 15px;
+            }
+
+            .domino-tile {
+                width: 200px;
+                height: 80px;
+            }
+
+            .domino-half {
+                font-size: 40px;
+            }
+
+            #playerName {
+                padding: 8px;
+                font-size: 16px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tiles-container {
+                gap: 8px;
+                padding: 10px;
+            }
+
+            .domino-tile {
+                width: 160px;
+                height: 70px;
+            }
+
+            .domino-half {
+                font-size: 32px;
+            }
+
+            .placement-options {
+                width: 95%;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 14px;
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header-section">
+            <div class="game-title">Mishail's Ultimate Domino</div>
+            <div id="playerNameDisplay" class="player-name-display" style="display: none;"></div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        
+        <div class="login-section" id="loginSection">
+            <div id="gameStatus" class="game-status">Checking game status...</div>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <button onclick="joinGame()" id="joinButton" disabled>Join Game</button>
+        </div>
+
+        <div class="tiles-container" id="playerTiles" style="display: none">
+            <!-- Tiles will be added here dynamically -->
+        </div>
+
+        <div id="placementOptions" class="placement-options">
+            <h3>Choose placement:</h3>
+            <button onclick="placeTile('left')">Place Left</button>
+            <button onclick="placeTile('right')">Place Right</button>
+        </div>
+
+        <div class="game-controls" id="gameControls" style="display: none">
+            <button id="drawTile" onclick="drawTile()">Draw Tile</button>
+            <button id="skipTurn" onclick="skipTurn()" style="display: none">Skip Turn</button>
+        </div>
+    </div>
+	<script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let gameState = {
+            playerId: null,
+            playerName: '',
+            tiles: [],
+            isMyTurn: false,
+            selectedTileIndex: null,
+            validPlacements: [],
+            boardState: [],
+            canDraw: true
+        };
+
+        // Initialize Notiflix
+        Notiflix.Report.init({
+            width: '360px',
+            backgroundColor: '#f8f8f8',
+            borderRadius: '12px',
+            backOverlay: true,
+            backOverlayClickToClose: false,
+            fontFamily: 'inherit',
+            svgSize: '80px',
+            plainText: true,
+            titleFontSize: '18px',
+            titleMaxLength: 34,
+            messageFontSize: '15px',
+            buttonFontSize: '14px',
+            cssAnimation: true,
+            cssAnimationDuration: 300,
+            cssAnimationStyle: 'fade',
+            buttonBackground: '#ff6347',
+            buttonBorderRadius: '8px',
+            buttonFontSize: '14px',
+            buttonMaxLength: 34,
+        });
+
+        function showMessage(message, isError = false) {
+            if (isError) {
+                Notiflix.Report.failure('Error', message, 'OK');
+            } else {
+                Notiflix.Report.success('Success', message, 'OK');
+            }
+        }
+
+        function checkExistingSession() {
+            const savedState = localStorage.getItem('dominoGameState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                document.getElementById('playerName').value = state.playerName;
+                if (state.playerName) {
+                    socket.emit('joinGame', { name: state.playerName, isReconnect: true });
+                }
+            }
+        }
+
+        function saveGameState() {
+            const state = {
+                playerName: gameState.playerName,
+                playerId: gameState.playerId
+            };
+            localStorage.setItem('dominoGameState', JSON.stringify(state));
+        }
+
+        function createDominoTile(tile, index) {
+            const div = document.createElement('div');
+            div.className = 'domino-tile';
+            div.onclick = () => selectTile(index);
+            
+            const firstHalf = document.createElement('div');
+            firstHalf.className = 'domino-half';
+            firstHalf.textContent = tile[0];
+
+            const secondHalf = document.createElement('div');
+            secondHalf.className = 'domino-half';
+            secondHalf.textContent = tile[1];
+
+            div.appendChild(firstHalf);
+            div.appendChild(secondHalf);
+
+            return div;
+        }
+		function updatePlayerTiles() {
+            const container = document.getElementById('playerTiles');
+            container.innerHTML = '';
+            
+            gameState.tiles.forEach((tile, index) => {
+                const tileElement = createDominoTile(tile, index);
+                if (!gameState.isMyTurn) {
+                    tileElement.classList.add('disabled');
+                }
+                if (index === gameState.selectedTileIndex) {
+                    tileElement.classList.add('selected-tile');
+                }
+                container.appendChild(tileElement);
+            });
+        }
+
+        function hasValidMoves() {
+            if (gameState.boardState.length === 0) return true;
+            
+            const leftEnd = gameState.boardState[0][0];
+            const rightEnd = gameState.boardState[gameState.boardState.length - 1][1];
+            
+            return gameState.tiles.some(tile => {
+                return tile[0] === leftEnd || tile[1] === leftEnd || 
+                       tile[0] === rightEnd || tile[1] === rightEnd;
+            });
+        }
+
+        function checkAndUpdateSkipButton() {
+            const skipButton = document.getElementById('skipTurn');
+            if (gameState.isMyTurn && !gameState.canDraw && !hasValidMoves()) {
+                skipButton.style.display = 'inline-block';
+            } else {
+                skipButton.style.display = 'none';
+            }
+        }
+
+        function selectTile(index) {
+            if (!gameState.isMyTurn) {
+                showMessage("It's not your turn!", true);
+                return;
+            }
+
+            if (gameState.selectedTileIndex === index) {
+                gameState.selectedTileIndex = null;
+                document.getElementById('placementOptions').classList.remove('visible');
+            } else {
+                gameState.selectedTileIndex = index;
+                const tile = gameState.tiles[index];
+                socket.emit('getValidPlacements', { tile, playerId: gameState.playerId });
+            }
+            
+            updatePlayerTiles();
+        }
+
+        function placeTile(end) {
+            if (!gameState.isMyTurn || gameState.selectedTileIndex === null) return;
+
+            const tile = gameState.tiles[gameState.selectedTileIndex];
+            const placement = gameState.validPlacements.find(p => p.end === end);
+
+            if (placement) {
+                socket.emit('playTile', {
+                    tile: tile,
+                    playerId: gameState.playerId,
+                    end: end,
+                    flip: placement.flip
+                });
+
+                gameState.selectedTileIndex = null;
+                document.getElementById('placementOptions').classList.remove('visible');
+                gameState.validPlacements = [];
+            }
+        }
+
+        function drawTile() {
+            if (!gameState.isMyTurn) return;
+            socket.emit('drawTile', { playerId: gameState.playerId });
+        }
+
+        function skipTurn() {
+            if (!gameState.isMyTurn || gameState.canDraw || hasValidMoves()) return;
+            socket.emit('skipTurn', { playerId: gameState.playerId });
+        }
+
+        function joinGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (!playerName) {
+                showMessage('Please enter your name', true);
+                return;
+            }
+            document.getElementById('joinButton').disabled = true;
+            socket.emit('joinGame', { name: playerName });
+        }
+		// Socket event handlers
+        socket.on('gameReset', () => {
+            localStorage.removeItem('dominoGameState');
+            gameState = {
+                playerId: null,
+                playerName: '',
+                tiles: [],
+                isMyTurn: false,
+                selectedTileIndex: null,
+                validPlacements: [],
+                boardState: [],
+                canDraw: true
+            };
+
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('playerTiles').style.display = 'none';
+            document.getElementById('gameControls').style.display = 'none';
+            document.getElementById('placementOptions').classList.remove('visible');
+            document.getElementById('playerName').value = '';
+            document.getElementById('joinButton').disabled = true;
+            document.getElementById('gameStatus').textContent = 'Waiting for host to start the game...';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('playerNameDisplay').style.display = 'none';
+        });
+
+        socket.on('gameStatus', (status) => {
+            const gameStatusDiv = document.getElementById('gameStatus');
+            const joinButton = document.getElementById('joinButton');
+            
+            if (!status.exists) {
+                gameStatusDiv.textContent = 'Waiting for host to start the game...';
+                joinButton.disabled = true;
+            } else {
+                gameStatusDiv.textContent = `Game ready: ${status.currentPlayers}/${status.playerCount} players joined`;
+                joinButton.disabled = false;
+            }
+        });
+
+        socket.on('gameJoined', (data) => {
+            gameState.playerId = data.id;
+            gameState.playerName = data.name;
+            gameState.tiles = data.tiles;
+            
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('playerTiles').style.display = 'flex';
+            document.getElementById('gameControls').style.display = 'block';
+            
+            const playerNameDisplay = document.getElementById('playerNameDisplay');
+            playerNameDisplay.textContent = `Player: ${data.name}`;
+            playerNameDisplay.style.display = 'block';
+            
+            updatePlayerTiles();
+            showMessage(`Welcome ${data.name}! Game joined successfully.`);
+            saveGameState();
+        });
+
+        socket.on('validPlacements', (placements) => {
+            gameState.validPlacements = placements;
+            const placementOptions = document.getElementById('placementOptions');
+            const selectedTile = gameState.tiles[gameState.selectedTileIndex];
+            const isDouble = selectedTile && selectedTile[0] === selectedTile[1];
+            
+            if (placements.length > 1 && !isDouble) {
+                placementOptions.classList.add('visible');
+            } else if (placements.length === 1 || (placements.length > 1 && isDouble)) {
+                placeTile(placements[0].end);
+            } else {
+                showMessage("No valid placements for this tile", true);
+                gameState.selectedTileIndex = null;
+                updatePlayerTiles();
+            }
+        });
+
+        socket.on('turnUpdate', (data) => {
+            gameState.isMyTurn = data.currentPlayer === gameState.playerId;
+            gameState.canDraw = data.canDraw;
+            const turnStatus = document.getElementById('gameStatus');
+            const drawButton = document.getElementById('drawTile');
+            
+            if (gameState.isMyTurn) {
+                turnStatus.className = 'game-status your-turn';
+                turnStatus.textContent = "It's your turn!";
+                drawButton.style.display = data.canDraw ? 'inline-block' : 'none';
+                checkAndUpdateSkipButton();
+            } else {
+                turnStatus.className = 'game-status';
+                turnStatus.textContent = 'Waiting for other players...';
+                drawButton.style.display = 'none';
+                document.getElementById('skipTurn').style.display = 'none';
+            }
+            
+            updatePlayerTiles();
+        });
+
+        socket.on('gameState', (state) => {
+            gameState.boardState = state.board;
+            checkAndUpdateSkipButton();
+        });
+
+        socket.on('tilePlayed', (data) => {
+            if (data.playerId === gameState.playerId) {
+                const playedTileIndex = gameState.tiles.findIndex(t => 
+                    (t[0] === data.tile[0] && t[1] === data.tile[1]) ||
+                    (t[0] === data.tile[1] && t[1] === data.tile[0])
+                );
+                
+                if (playedTileIndex !== -1) {
+                    gameState.tiles.splice(playedTileIndex, 1);
+                    gameState.selectedTileIndex = null;
+                    updatePlayerTiles();
+                }
+            }
+            
+            document.getElementById('placementOptions').classList.remove('visible');
+        });
+
+        socket.on('tileDrawn', (tile) => {
+            gameState.tiles.push(tile);
+            updatePlayerTiles();
+            checkAndUpdateSkipButton();
+        });
+
+        socket.on('error', (data) => {
+            showMessage(data.message, true);
+        });
+
+        socket.on('gameOver', (data) => {
+            const statusDiv = document.getElementById('gameStatus');
+            statusDiv.className = 'game-status';
+            const message = data.blocked ? 
+                `Game Over! ${data.winner} wins by game block!` :
+                `Game Over! ${data.winner} wins!`;
+                
+            statusDiv.textContent = message;
+            showMessage(message, false);
+            
+            document.getElementById('drawTile').style.display = 'none';
+            document.getElementById('skipTurn').style.display = 'none';
+            document.querySelectorAll('.domino-tile').forEach(tile => {
+                tile.classList.add('disabled');
+            });
+            gameState.isMyTurn = false;
+            document.getElementById('placementOptions').classList.remove('visible');
+        });
+
+        // Event listeners
+        document.getElementById('playerName').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && !document.getElementById('joinButton').disabled) {
+                joinGame();
+            }
+        });
+
+        // Check for existing session on page load
+        window.addEventListener('load', checkExistingSession);
+    </script>
+</body>
+</html>
