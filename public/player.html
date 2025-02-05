@@ -183,7 +183,6 @@
             font-weight: bold;
             margin: 0 10px;
         }
-
         button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
@@ -258,6 +257,26 @@
         }
 
         @media (max-width: 480px) {
+			.game-title {
+				margin: 0;
+				color: #ffffff;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+				font-size: 6.5vw;
+				font-weight: bold;
+			}
+		
+		    .game-controls {
+                gap: 10px;
+                padding: 0 5px;
+            }
+
+            #drawTile, #skipTurn {
+                padding: 12px 20px;
+                font-size: 1.2em;
+                min-width: 140px;
+                margin: 5px;
+            }
+
             .tiles-container {
                 gap: 8px;
                 padding: 10px;
