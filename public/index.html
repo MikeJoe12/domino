@@ -52,8 +52,8 @@
         }
 
         #qr-code {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
@@ -93,7 +93,7 @@
 
         .domino-tile {
             position: absolute;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 1);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 10px;
             display: flex;
@@ -282,6 +282,7 @@
             </div>
             <div class="game-buttons">
                 <button onclick="initializeGame()" id="startButton">Start Game</button>
+                <button onclick="restartGame()" style="background-color: #4CAF50;">Restart Game</button>
                 <button onclick="resetGame()" style="background-color: #dc3545;">Reset Game</button>
             </div>
         </div>
@@ -297,6 +298,8 @@
         <div class="players-container" id="playersContainer"></div>
     </div>
 <audio id="winSound" src="win.mp3"></audio>
+<audio id="hitSound" src="hit.mp3"></audio>
+<audio id="drwSound" src="draw.mp3"></audio>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -444,6 +447,11 @@ function updatePlayers() {
                 const oldCount = oldTileCounts.get(player.name) || 0;
                 if (player.tileCount > oldCount) {
                     playerSection.classList.add('pop-animation');
+					            // Play tile draw sound
+            const drwSound = document.getElementById('drwSound');
+            drwSound.volume = 0.5; // Set volume to 50%
+            drwSound.currentTime = 0; // Reset the sound to start
+            drwSound.play().catch(err => console.log('Error playing sound:', err));
                     setTimeout(() => {
                         playerSection.classList.remove('pop-animation');
                     }, 500);
@@ -455,6 +463,9 @@ function updatePlayers() {
 
         function resetGame() {
             socket.emit('resetGame');
+        }
+		function restartGame() {
+            socket.emit('restartGame');
         }
 
         // Socket event handlers
@@ -493,8 +504,14 @@ function updatePlayers() {
         });
 
         socket.on('tilePlayed', (data) => {
+            // Play tile placement sound
+            const hitSound = document.getElementById('hitSound');
+            hitSound.volume = 0.5; // Set volume to 50%
+            hitSound.currentTime = 0; // Reset the sound to start
+            hitSound.play().catch(err => console.log('Error playing sound:', err));
+            
             updateBoard();
-			socket.emit('gameState', {});
+            socket.emit('gameState', {});
         });
 
         socket.on('turnUpdate', (data) => {

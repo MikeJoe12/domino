@@ -64,6 +64,42 @@ class DominoGame {
         );
     }
 
+    determineFirstTurn() {
+        let maxDouble = -1;
+        let startingPlayer = 0;
+
+        // For 4 players, specifically look for 6-6
+        if (this.playerCount === 4) {
+            for (let i = 0; i < this.players.length; i++) {
+                const hasDoubleSix = this.players[i].tiles.some(tile => 
+                    tile[0] === 6 && tile[1] === 6
+                );
+                if (hasDoubleSix) {
+                    this.currentTurn = i;
+                    return;
+                }
+            }
+        } 
+        // For 2 players or if no 6-6 was found in 4 player game, find largest double
+        for (let i = 0; i < this.players.length; i++) {
+            const playerDoubles = this.players[i].tiles.filter(tile => 
+                tile[0] === tile[1]
+            );
+            
+            for (const double of playerDoubles) {
+                if (double[0] > maxDouble) {
+                    maxDouble = double[0];
+                    startingPlayer = i;
+                }
+            }
+        }
+
+        // If no doubles found, keep default (0)
+        if (maxDouble !== -1) {
+            this.currentTurn = startingPlayer;
+        }
+    }
+
     handleDisconnect(socketId) {
         const playerIndex = this.players.findIndex(p => this.playerSockets.get(p.name) === socketId);
         if (playerIndex !== -1) {
@@ -74,11 +110,10 @@ class DominoGame {
                 tiles: player.tiles,
                 index: playerIndex
             });
-            // Don't remove the player from the game, just mark as disconnected
-          //  console.log(`Player ${player.name} disconnected and saved`);
         }
     }
-	handleReconnect(playerName, socketId) {
+
+    handleReconnect(playerName, socketId) {
         const savedPlayer = this.disconnectedPlayers.get(playerName);
         if (savedPlayer) {
             // Update socket ID
@@ -94,7 +129,6 @@ class DominoGame {
         // Check for reconnection first
         const savedPlayer = this.handleReconnect(name, socketId);
         if (savedPlayer) {
-            // Update the socket ID for the existing player
             this.playerSockets.set(name, socketId);
             const player = this.players.find(p => p.name === name);
             if (player) {
@@ -119,6 +153,8 @@ class DominoGame {
         
         if (this.players.length === this.playerCount) {
             this.gameStarted = true;
+            // Determine first turn when all players have joined
+            this.determineFirstTurn();
         }
 
         return player;
@@ -184,7 +220,8 @@ class DominoGame {
         if (tileIndex === -1) {
             return { success: false, message: "Tile not in hand" };
         }
-		// Remove tile from player's hand
+
+        // Remove tile from player's hand
         player.tiles.splice(tileIndex, 1);
 
         // Add tile to the board in the correct orientation
@@ -282,6 +319,7 @@ class DominoGame {
         };
     }
 }
+
 io.on('connection', (socket) => {
     // Send initial game status
     if (game) {
@@ -341,10 +379,48 @@ io.on('connection', (socket) => {
         socket.emit('validPlacements', validPlacements);
     });
 
-    socket.on('resetGame', () => {
+socket.on('resetGame', () => {
         game = null;
         io.emit('gameReset');
         io.emit('gameStatus', { exists: false });
+    });
+
+socket.on('restartGame', () => {
+        if (!game) return;
+        
+        // Store current players before creating new game
+        const currentPlayers = game.players.map(player => ({
+            name: player.name,
+            socketId: game.playerSockets.get(player.name)
+        }));
+        const playerCount = game.playerCount;
+
+        // First notify all players about restart
+        io.emit('restartGame');
+
+        // Create new game with same player count
+        game = new DominoGame(playerCount);
+
+        // Re-add all players to the new game
+        currentPlayers.forEach(player => {
+            const newPlayer = game.addPlayer(player.name, player.socketId);
+            io.to(player.socketId).emit('gameJoined', newPlayer);
+        });
+
+        // Emit new game state
+        const gameState = game.getGameState();
+        io.emit('gameInitialized', gameState);
+        io.emit('gameStatus', { 
+            exists: true, 
+            playerCount: playerCount, 
+            currentPlayers: currentPlayers.length 
+        });
+
+        // Send turn update
+        io.emit('turnUpdate', { 
+            currentPlayer: game.currentTurn,
+            canDraw: game.deck.length > 0
+        });
     });
 
     socket.on('playTile', (data) => {

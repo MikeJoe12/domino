@@ -74,7 +74,7 @@
 		.domino-tile {
             width: 240px;
             height: 100px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 1);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 10px;
             cursor: pointer;
@@ -333,6 +333,7 @@
             <button id="skipTurn" onclick="skipTurn()" style="display: none">Skip Turn</button>
         </div>
     </div>
+	<audio id="startSound" src="start.mp3"></audio>
 	<script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -546,6 +547,44 @@
                 joinButton.disabled = false;
             }
         });
+		
+		socket.on('gameInitialized', (state) => {
+            gameState.boardState = state.board;
+            updatePlayerTiles();
+            const playerCount = parseInt(document.getElementById('playerCount').value);
+            document.getElementById('gameStatus').textContent = `Waiting for ${playerCount} players to join...`;
+            socket.emit('gameStatus', { exists: true, playerCount: playerCount, currentPlayers: 0 });
+        });
+
+socket.on('restartGame', () => {
+            // Clear tiles container immediately
+            document.getElementById('playerTiles').innerHTML = '';
+            
+            // Clear current game state but keep player info
+            const playerName = gameState.playerName;
+            const playerId = gameState.playerId;
+            
+            gameState = {
+                playerId: playerId,
+                playerName: playerName,
+                tiles: [],
+                isMyTurn: false,
+                selectedTileIndex: null,
+                validPlacements: [],
+                boardState: [],
+                canDraw: true
+            };
+
+            // Update UI
+            document.getElementById('gameStatus').textContent = 'Game restarting...';
+            document.getElementById('gameControls').style.display = 'none';
+            document.getElementById('placementOptions').classList.remove('visible');
+            document.getElementById('skipTurn').style.display = 'none';
+            document.getElementById('drawTile').style.display = 'none';
+            
+            // Force update player tiles display
+            updatePlayerTiles();
+        });
 
         socket.on('gameJoined', (data) => {
             gameState.playerId = data.id;
@@ -559,9 +598,15 @@
             const playerNameDisplay = document.getElementById('playerNameDisplay');
             playerNameDisplay.textContent = `Player: ${data.name}`;
             playerNameDisplay.style.display = 'block';
+			
+		// Play start sound when player joins and tiles are displayed
+            const startSound = document.getElementById('startSound');
+            startSound.volume = 0.5; // Set volume to 50%
+            startSound.currentTime = 0; // Reset the sound to start
+            startSound.play().catch(err => console.log('Error playing sound:', err));
             
             updatePlayerTiles();
-            showMessage(`Welcome ${data.name}! Game joined successfully.`);
+            //showMessage(`Welcome ${data.name}! Game joined successfully.`);
             saveGameState();
         });
 
