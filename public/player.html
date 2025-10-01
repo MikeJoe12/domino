@@ -301,6 +301,7 @@
                 margin: 5px;
             }
         }
+
     </style>
 </head>
 <body>
@@ -335,6 +336,11 @@
     </div>
 	<audio id="startSound" src="start.mp3"></audio>
 	<script src="/socket.io/socket.io.js"></script>
+	<script src="/helpers.js"></script>
+	<style>
+  .pip { width: 18px; height: 18px; }
+</style>
+
     <script>
         const socket = io();
         let gameState = {
@@ -371,6 +377,7 @@
             buttonMaxLength: 34,
         });
 
+
         function showMessage(message, isError = false) {
             if (isError) {
                 Notiflix.Report.failure('Error', message, 'OK');
@@ -405,11 +412,11 @@
             
             const firstHalf = document.createElement('div');
             firstHalf.className = 'domino-half';
-            firstHalf.textContent = tile[0];
+            addPipsToHalf(firstHalf, tile[0]);
 
             const secondHalf = document.createElement('div');
             secondHalf.className = 'domino-half';
-            secondHalf.textContent = tile[1];
+            addPipsToHalf(secondHalf, tile[1]);
 
             div.appendChild(firstHalf);
             div.appendChild(secondHalf);

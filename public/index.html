@@ -115,6 +115,7 @@
         }
 
         .domino-half {
+			position: relative; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -260,6 +261,8 @@
             font-size: 16px;
             color: rgba(255, 255, 255, 0.8);
         }
+
+
     </style>
 </head>
 <body>
@@ -301,6 +304,8 @@
 <audio id="hitSound" src="hit.mp3"></audio>
 <audio id="drwSound" src="draw.mp3"></audio>
     <script src="/socket.io/socket.io.js"></script>
+	<script src="/helpers.js"></script>
+
     <script>
         const socket = io();
         let gameState = {
@@ -309,6 +314,8 @@
             currentTurn: 0,
             gameStarted: false
         };
+		
+
 
         function initializeGame() {
             const playerCount = parseInt(document.getElementById('playerCount').value);
@@ -386,39 +393,41 @@
             return positions;
         }
 
-        function updateBoard() {
-            const boardWrapper = document.getElementById('boardWrapper');
-            boardWrapper.innerHTML = '';
+function updateBoard() {
+    const boardWrapper = document.getElementById('boardWrapper');
+    boardWrapper.innerHTML = '';
 
-            if (gameState.board.length === 0) return;
+    if (gameState.board.length === 0) return;
 
-            const positions = calculateTilePositions(gameState.board);
+    const positions = calculateTilePositions(gameState.board);
 
-            positions.forEach((pos) => {
-                const isDouble = pos.tile[0] === pos.tile[1];
-                const tile = document.createElement('div');
-                tile.className = `domino-tile ${isDouble ? 'vertical' : 'horizontal'}`;
+    positions.forEach((pos) => {
+        const isDouble = pos.tile[0] === pos.tile[1];
+        const tile = document.createElement('div');
+        tile.className = `domino-tile ${isDouble ? 'vertical' : 'horizontal'}`;
 
-                const firstHalf = document.createElement('div');
-                firstHalf.className = 'domino-half';
-                firstHalf.textContent = pos.tile[0];
+        const firstHalf = document.createElement('div');
+        firstHalf.className = 'domino-half';
+        // For doubles, use 'v' orientation to get vertical pip arrangement
+        addPipsToHalf(firstHalf, Number(pos.tile[0]), isDouble ? 'v' : 'h');  
 
-                const secondHalf = document.createElement('div');
-                secondHalf.className = 'domino-half';
-                secondHalf.textContent = pos.tile[1];
+        const secondHalf = document.createElement('div');
+        secondHalf.className = 'domino-half';
+        // For doubles, use 'v' orientation to get vertical pip arrangement  
+        addPipsToHalf(secondHalf, Number(pos.tile[1]), isDouble ? 'v' : 'h');
 
-                tile.appendChild(firstHalf);
-                tile.appendChild(secondHalf);
+        tile.appendChild(firstHalf);
+        tile.appendChild(secondHalf);
 
-                tile.style.position = 'absolute';
-                tile.style.left = `${pos.x + boardWrapper.offsetWidth/2}px`;
-                tile.style.top = '50%';
-                tile.style.transform = `translate(0, -50%) scale(${pos.scale})`;
-                tile.style.transformOrigin = 'center center';
+        tile.style.position = 'absolute';
+        tile.style.left = `${pos.x + boardWrapper.offsetWidth/2}px`;
+        tile.style.top = '50%';
+        tile.style.transform = `translate(0, -50%) scale(${pos.scale})`;
+        tile.style.transformOrigin = 'center center';
 
-                boardWrapper.appendChild(tile);
-            });
-        }
+        boardWrapper.appendChild(tile);
+    });
+}
 
 function updatePlayers() {
             const container = document.getElementById('playersContainer');
